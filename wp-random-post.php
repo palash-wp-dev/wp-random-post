@@ -9,6 +9,8 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 function file_enquetion()
 {
     wp_enqueue_script( 'random-ajax', plugin_dir_url( __FILE__ ) . 'ajax.js', ['jquery'], null, true );
+
+    wp_localize_script( 'random-ajax', 'ajax_object', ['ajax_url' => admin_url('admin-ajax.php')] );
 }
 add_action( 'wp_enqueue_scripts', 'file_enquetion' );
 
@@ -17,7 +19,7 @@ function random_post()
 {
     $args = [
         'post_type' => 'post',
-        'orderby' => 'rand'
+        'orderby' => 'rand',
         'posts_per_page' => 1,
     ];
 
@@ -27,21 +29,40 @@ function random_post()
         while( $query->have_posts() ) {
             $query->the_post();
 
-            echo $query->the_title();
+           
+
+            $response = [
+                'title'   => get_the_title(),
+                'content' => get_the_excerpt(),
+                'link'    => get_permalink(),
+            ];
+
+            wp_send_json_success( $response );
         }
     } else {
-        echo esc_html__( 'No post found', 'wp-random-post' )
+        wp_send_json_error( [
+            'message' => 'No post found',
+        ] );
     }
 }
 add_action( 'wp_ajax_random_post', 'random_post' );
 add_action( 'wp_ajax_nopriv_random_post', 'random_post' );
 
-function add_button()
+
+
+function test()
 {
+    function add_button()
+{
+    ob_start();
     ?>
     <input type="button" id="clickMe" value="Click">
+    <div id="random-post-result"></div>
     <?php 
+    return ob_get_clean();
 }
 
 add_shortcode( 'button', 'add_button' );
+}
+add_action( 'init', 'test' );
 
